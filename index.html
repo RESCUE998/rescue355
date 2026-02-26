@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>哈尔滨红十字蓝天救援队员身份核验</title>
+<title>哈尔滨红十字蓝天救援队 - 身份核验</title>
 <style>
-/* --- 样式保持不变，仅保留核心部分 --- */
+/* --- 样式保持不变 --- */
 :root {
   --primary: #0d47a1; --bg-color: #f0f4f8; --card-bg: #ffffff; --text-main: #2c3e50;
   --shadow: 0 8px 24px rgba(13, 71, 161, 0.12); --safe-bottom: env(safe-area-inset-bottom, 20px);
@@ -70,7 +70,7 @@ body { background-color: var(--bg-color); color: var(--text-main); min-height: 1
 
 <div class="app-container">
   <div class="header">
-    <div class="title">哈尔滨红十字蓝天救援队活跃队员查询系统</div>
+    <div class="title">蓝天救援活跃队员查询系统</div>
   </div>
 
   <div class="search-panel">
@@ -116,38 +116,27 @@ body { background-color: var(--bg-color); color: var(--text-main); min-height: 1
   </div>
 
   <div class="footer-tip">
-    ⚠️ 数据实时同步自官方云端数据库
+    ⚠️ 数据同步自腾讯云开发数据库
   </div>
 </div>
 
-<!-- 引入 Firebase SDK -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+<!-- 引入腾讯云开发 Web SDK -->
+<script src="https://imgcache.qq.com/qcloud/cloudbase-js-sdk/1.3.6/cloudbase.full.js"></script>
 
+<script>
   // ==========================================
-  // ⚠️ 请在此处替换为您自己的 Firebase 配置
+  // ⚠️ 请在此处替换为您的 腾讯云环境 ID
+  // 格式类似：cloud1-xxxxx
   // ==========================================
-  const firebaseConfig = {
-    apiKey: "AIzaSyBx68f5Ovl1LOW7mxYTYamWVGOXEnTUJG8",
-    authDomain: "blue-sky-rescue-cec96.firebaseapp.com",
-    projectId: "blue-sky-rescue-cec96",
-    storageBucket: "blue-sky-rescue-cec96.firebasestorage.app",
-    messagingSenderId: "558970431785",
-    appId: "1:558970431785:web:7ad9ae34ba24a770caaf38"
-  };
+  const ENV_ID = 'blue-sky-rescue-4g76mxnx2fbdc256'; 
   // ==========================================
 
-  // 初始化 Firebase
-  let db;
-  try {
-    const app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    console.log("✅ Firebase 连接成功");
-  } catch (e) {
-    console.error("❌ Firebase 配置错误，请检查代码:", e);
-    alert("系统配置错误：请联系管理员检查 Firebase 配置。");
-  }
+  // 初始化腾讯云开发
+  const app = cloudbase.init({
+    env: ENV_ID
+  });
+  const db = app.database();
+  const _ = db.command;
 
   // DOM 元素
   const inpName = document.getElementById('inpName');
@@ -172,30 +161,29 @@ body { background-color: var(--bg-color); color: var(--text-main); min-height: 1
     msgBox.className = 'msg-box';
 
     if (!name || !num) {
-      showMessage("⚠️ 必须同时输入姓名和编号", "error");
+      showMessage("⚠️ 为了信息安全，必须同时输入姓名和编号", "error");
       vibrate('medium');
-      return;
-    }
-
-    if (!db) {
-      showMessage("❌ 数据库未连接，请检查配置", "error");
       return;
     }
 
     btnSearch.textContent = "核验中...";
     btnSearch.classList.add('disabled');
-    showMessage("正在连接云端数据库...", "load");
+    showMessage("正在连接腾讯云数据库...", "load");
 
     try {
-      // 【核心改变】从 Firebase Firestore 读取真实数据
-      // 文档 ID 直接使用队员编号 (num)，这样查询最快且准确
-      const docRef = doc(db, "members", num);
-      const docSnap = await getDoc(docRef);
+      // 【核心改变】查询腾讯云数据库
+      // 集合名称必须与控制台创建的一致 (members)
+      const collection = db.collection('members');
+      
+      // 精确匹配编号
+      const res = await collection.where({
+        number: num
+      }).get();
 
-      if (docSnap.exists()) {
-        const data = docSnap.data();
+      if (res.data.length > 0) {
+        const data = res.data[0];
         
-        // 二次校验姓名是否匹配 (防止编号泄露但姓名不对)
+        // 二次校验姓名
         if (data.name === name) {
           render(data);
           msgBox.style.display = 'none';
@@ -210,7 +198,11 @@ body { background-color: var(--bg-color); color: var(--text-main); min-height: 1
       }
     } catch (error) {
       console.error("查询错误:", error);
-      showMessage("❌ 网络错误或数据库权限不足", "error");
+      let errMsg = "❌ 网络错误或配置不正确";
+      if (error.message && error.message.includes('env')) {
+        errMsg = "❌ 环境 ID 配置错误，请检查代码";
+      }
+      showMessage(errMsg, "error");
       vibrate('medium');
     } finally {
       btnSearch.textContent = "立即核验身份";
@@ -223,7 +215,7 @@ body { background-color: var(--bg-color); color: var(--text-main); min-height: 1
 
     document.getElementById('resName').textContent = u.name;
     document.getElementById('resTeam').textContent = u.team;
-    document.getElementById('resNumVal').textContent = u.number || u.id; // 兼容字段名
+    document.getElementById('resNumVal').textContent = u.number;
     document.getElementById('resSkill').textContent = u.skills;
     if(u.photo) resPhoto.src = u.photo;
 
