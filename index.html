@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>哈尔滨红十字蓝天救援队员身份核验</title>
+<style>
+/* --- 样式保持不变，仅保留核心部分 --- */
+:root {
+  --primary: #0d47a1; --bg-color: #f0f4f8; --card-bg: #ffffff; --text-main: #2c3e50;
+  --shadow: 0 8px 24px rgba(13, 71, 161, 0.12); --safe-bottom: env(safe-area-inset-bottom, 20px);
+  --role-leader-bg: #FFEBEE; --role-leader-text: #C62828;
+  --role-manage-bg: #F3E5F5; --role-manage-text: #7B1FA2;
+  --role-member-bg: #E3F2FD; --role-member-text: #0D47A1;
+  --role-pre-bg: #FFF3E0; --role-pre-text: #EF6C00;
+  --role-trainee-bg: #E0F2F1; --role-trainee-text: #00695C;
+  --role-left-bg: #ECEFF1; --role-left-text: #546E7A;
+  --status-valid-bg: #E8F5E9; --status-valid-text: #2E7D32;
+  --status-invalid-bg: #ECEFF1; --status-invalid-text: #546E7A;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: -apple-system, "PingFang SC", sans-serif; }
+body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 0); }
+.app-container { width: 100%; max-width: 600px; margin: 0 auto; flex: 1; display: flex; flex-direction: column; padding: 0 16px; padding-bottom: calc(20px + var(--safe-bottom)); }
+.header { text-align: center; padding: 24px 0 16px; }
+.title { font-size: 22px; font-weight: 800; color: var(--primary); line-height: 1.4; }
+.search-panel { background: var(--card-bg); padding: 20px; border-radius: 16px; box-shadow: var(--shadow); margin-bottom: 20px; }
+.input-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+@media (min-width: 480px) { .input-group { flex-direction: row; } }
+.input-item { width: 100%; background: #f5f7fa; border: 1px solid #e1e4e8; border-radius: 12px; padding: 14px 16px; font-size: 16px; outline: none; height: 48px; }
+.input-item:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.15); }
+.btn-search { background: linear-gradient(135deg, var(--primary), #1565c0); color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; padding: 14px 0; width: 100%; height: 48px; box-shadow: 0 4px 15px rgba(13, 71, 161, 0.3); cursor: pointer; }
+.btn-search:active { transform: scale(0.98); opacity: 0.9; }
+.btn-search.disabled { background: #b0bec5; box-shadow: none; cursor: not-allowed; transform: none; }
+.msg-box { margin-top: 12px; text-align: center; font-size: 14px; padding: 10px; border-radius: 8px; display: none; }
+.msg-error { background: #ffebee; color: #c62828; display: block; border: 1px solid #ffcdd2; }
+.msg-load { color: var(--primary); background: #e3f2fd; display: block; border: 1px solid #bbdefb; }
+.result-card { background: var(--card-bg); border-radius: 20px; overflow: visible; box-shadow: var(--shadow); position: relative; display: none; margin-bottom: 20px; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.result-card.show { display: block; }
+.card-header { height: 120px; background: linear-gradient(135deg, var(--primary), #1565c0); border-radius: 20px 20px 0 0; }
+.photo-box { width: 100px; height: 120px; border: 4px solid #fff; border-radius: 12px; overflow: hidden; position: absolute; left: 50%; top: 80px; transform: translateX(-50%); box-shadow: 0 6px 16px rgba(0,0,0,0.15); z-index: 2; background: #f0f0f0; }
+.member-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-body { padding: 95px 20px 20px; text-align: center; position: relative; z-index: 2; }
+.name-text { font-size: 24px; font-weight: 800; color: var(--text-main); margin-bottom: 12px; line-height: 1.4; word-break: break-all; }
+.tags { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.tag { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; box-shadow: 0 2px 4px rgba(0,0,0,0.08); display: inline-flex; align-items: center; white-space: nowrap; }
+.tag-role-leader { background: var(--role-leader-bg); color: var(--role-leader-text); }
+.tag-role-manage { background: var(--role-manage-bg); color: var(--role-manage-text); }
+.tag-role-member { background: var(--role-member-bg); color: var(--role-member-text); }
+.tag-role-pre { background: var(--role-pre-bg); color: var(--role-pre-text); }
+.tag-role-trainee { background: var(--role-trainee-bg); color: var(--role-trainee-text); }
+.tag-role-left { background: var(--role-left-bg); color: var(--role-left-text); }
+.tag-status-valid { background: var(--status-valid-bg); color: var(--status-valid-text); }
+.tag-status-invalid { background: var(--status-invalid-bg); color: var(--status-invalid-text); }
+.info-grid { background: #f8f9fa; border-radius: 14px; padding: 16px; text-align: left; font-size: 14px; border: 1px solid #eceff1; }
+.info-row { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px dashed #dde1e6; padding-bottom: 10px; align-items: center; }
+.info-row.hidden { display: none; }
+.info-row:last-child { border: none; margin: 0; padding: 0; }
+.label { color: #78909c; min-width: 70px; font-weight: 500; flex-shrink: 0; font-size: 13px; }
+.value { font-weight: 600; color: var(--text-main); text-align: right; flex: 1; margin-left: 10px; word-break: break-word; line-height: 1.4; font-size: 14px; }
+.value.team-value { color: var(--primary); font-size: 15px; }
+.skills { font-weight: 400; color: #546e7a; font-size: 13px; line-height: 1.5; }
+.footer-info { margin-top: 20px; font-size: 12px; color: #90a4ae; border-top: 1px solid #eceff1; padding-top: 12px; display: flex; justify-content: space-between; align-items: center; }
+.badge { color: var(--primary); font-weight: 700; background: #e3f2fd; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+.watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 18px; color: rgba(13, 71, 161, 0.04); font-weight: 900; pointer-events: none; white-space: nowrap; z-index: 0; width: 100%; text-align: center; }
+.footer-tip { margin-top: 10px; margin-bottom: 10px; font-size: 12px; color: #90a4ae; text-align: center; line-height: 1.6; opacity: 0.8; }
+@keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <div class="header">
+    <div class="title">哈尔滨红十字蓝天救援队活跃队员查询系统</div>
+  </div>
+
+  <div class="search-panel">
+    <div class="input-group">
+      <input class="input-item" id="inpName" type="text" placeholder="队员姓名 (必填)" autocomplete="off">
+      <input class="input-item" id="inpNum" type="text" placeholder="队员编号 (必填)" autocomplete="off">
+    </div>
+    <button class="btn-search" id="btnSearch">立即核验身份</button>
+    <div id="msgBox" class="msg-box"></div>
+  </div>
+
+  <div class="result-card" id="resCard">
+    <div class="watermark">HRBSL BLUE SKY</div>
+    <div class="card-header"></div>
+    <div class="photo-box">
+      <img id="resPhoto" class="member-photo" src="" alt="队员照片">
+    </div>
+    <div class="card-body">
+      <div class="name-text" id="resName">---</div>
+      <div class="tags">
+        <span class="tag" id="resRole">---</span>
+        <span class="tag" id="resStatus">---</span>
+      </div>
+      <div class="info-grid">
+        <div class="info-row">
+          <span class="label">队员编号</span>
+          <span class="value" id="resNumVal">---</span>
+        </div>
+        <div class="info-row">
+          <span class="label">所属队伍</span>
+          <span class="value team-value" id="resTeam">---</span>
+        </div>
+        <div class="info-row" id="rowSkills">
+          <span class="label">专业技能</span>
+          <span class="value skills" id="resSkill">---</span>
+        </div>
+      </div>
+      <div class="footer-info">
+        <span id="verifyTime">核验时间：--:--</span>
+        <span class="badge">官方认证</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-tip">
+    ⚠️ 数据实时同步自官方云端数据库
+  </div>
+</div>
+
+<!-- 引入 Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+  // ==========================================
+  // ⚠️ 请在此处替换为您自己的 Firebase 配置
+  // ==========================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyBx68f5Ovl1LOW7mxYTYamWVGOXEnTUJG8",
+    authDomain: "blue-sky-rescue-cec96.firebaseapp.com",
+    projectId: "blue-sky-rescue-cec96",
+    storageBucket: "blue-sky-rescue-cec96.firebasestorage.app",
+    messagingSenderId: "558970431785",
+    appId: "1:558970431785:web:7ad9ae34ba24a770caaf38"
+  };
+  // ==========================================
+
+  // 初始化 Firebase
+  let db;
+  try {
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    console.log("✅ Firebase 连接成功");
+  } catch (e) {
+    console.error("❌ Firebase 配置错误，请检查代码:", e);
+    alert("系统配置错误：请联系管理员检查 Firebase 配置。");
+  }
+
+  // DOM 元素
+  const inpName = document.getElementById('inpName');
+  const inpNum = document.getElementById('inpNum');
+  const btnSearch = document.getElementById('btnSearch');
+  const msgBox = document.getElementById('msgBox');
+  const resCard = document.getElementById('resCard');
+  const rowSkills = document.getElementById('rowSkills');
+  const resPhoto = document.getElementById('resPhoto');
+
+  // 绑定事件
+  btnSearch.addEventListener('click', doSearch);
+  inpName.addEventListener('keypress', (e) => { if(e.key === 'Enter') doSearch(); });
+  inpNum.addEventListener('keypress', (e) => { if(e.key === 'Enter') doSearch(); });
+
+  async function doSearch() {
+    const name = inpName.value.trim();
+    const num = inpNum.value.trim();
+
+    resCard.classList.remove('show');
+    msgBox.style.display = 'none';
+    msgBox.className = 'msg-box';
+
+    if (!name || !num) {
+      showMessage("⚠️ 必须同时输入姓名和编号", "error");
+      vibrate('medium');
+      return;
+    }
+
+    if (!db) {
+      showMessage("❌ 数据库未连接，请检查配置", "error");
+      return;
+    }
+
+    btnSearch.textContent = "核验中...";
+    btnSearch.classList.add('disabled');
+    showMessage("正在连接云端数据库...", "load");
+
+    try {
+      // 【核心改变】从 Firebase Firestore 读取真实数据
+      // 文档 ID 直接使用队员编号 (num)，这样查询最快且准确
+      const docRef = doc(db, "members", num);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        
+        // 二次校验姓名是否匹配 (防止编号泄露但姓名不对)
+        if (data.name === name) {
+          render(data);
+          msgBox.style.display = 'none';
+          vibrate('light');
+        } else {
+          showMessage("❌ 姓名与编号不匹配", "error");
+          vibrate('medium');
+        }
+      } else {
+        showMessage("❌ 未找到该编号的队员信息", "error");
+        vibrate('medium');
+      }
+    } catch (error) {
+      console.error("查询错误:", error);
+      showMessage("❌ 网络错误或数据库权限不足", "error");
+      vibrate('medium');
+    } finally {
+      btnSearch.textContent = "立即核验身份";
+      btnSearch.classList.remove('disabled');
+    }
+  }
+
+  function render(u) {
+    const isInvalid = (u.statusType === 'invalid' || u.status === '无效');
+
+    document.getElementById('resName').textContent = u.name;
+    document.getElementById('resTeam').textContent = u.team;
+    document.getElementById('resNumVal').textContent = u.number || u.id; // 兼容字段名
+    document.getElementById('resSkill').textContent = u.skills;
+    if(u.photo) resPhoto.src = u.photo;
+
+    const roleEl = document.getElementById('resRole');
+    const statusEl = document.getElementById('resStatus');
+
+    statusEl.className = 'tag';
+    if (isInvalid) {
+      statusEl.textContent = "无效";
+      statusEl.classList.add('tag-status-invalid');
+    } else {
+      statusEl.textContent = "有效";
+      statusEl.classList.add('tag-status-valid');
+    }
+
+    roleEl.className = 'tag'; 
+    if (isInvalid) {
+      roleEl.textContent = "离队"; 
+      roleEl.classList.add('tag-role-left');
+      rowSkills.classList.add('hidden');
+    } else {
+      roleEl.textContent = u.role;
+      switch(u.roleType) {
+        case 'leader': roleEl.classList.add('tag-role-leader'); break;
+        case 'manage': roleEl.classList.add('tag-role-manage'); break;
+        case 'member': roleEl.classList.add('tag-role-member'); break;
+        case 'pre': roleEl.classList.add('tag-role-pre'); break;
+        case 'trainee': roleEl.classList.add('tag-role-trainee'); break;
+        default: roleEl.classList.add('tag-role-member');
+      }
+      rowSkills.classList.remove('hidden');
+    }
+
+    const now = new Date();
+    const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+    document.getElementById('verifyTime').textContent = `核验时间：${timeStr}`;
+
+    resCard.style.display = 'block';
+    void resCard.offsetWidth;
+    resCard.classList.add('show');
+    
+    setTimeout(() => {
+      resCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+  }
+
+  function showMessage(msg, type) {
+    msgBox.textContent = msg;
+    msgBox.className = `msg-box msg-${type}`;
+    msgBox.style.display = 'block';
+  }
+
+  function vibrate(type) {
+    if (navigator.vibrate) navigator.vibrate(type === 'light' ? 50 : 100);
+  }
+</script>
+
+</body>
+</html>
